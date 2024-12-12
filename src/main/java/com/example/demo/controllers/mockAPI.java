@@ -45,7 +45,7 @@ public class mockAPI {
     }
 
     @PostMapping("/enviar-correo")
-    public static void sendEmail(@RequestParam String message, @RequestParam String correo) {
+    public static void sendEmail(@RequestParam("mensaje") String message, @RequestParam("correo") String correo) {
         String host = "smtp.gmail.com"; // Servidor SMTP de Gmail
         String subject = "Heladeras Comunitarias";
         // Obtener las credenciales del correo desde variables de entorno
