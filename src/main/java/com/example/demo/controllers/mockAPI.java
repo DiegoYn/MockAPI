@@ -1,5 +1,6 @@
 package com.example.demo.controllers;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -9,6 +10,7 @@ import jakarta.mail.*;
 import jakarta.mail.internet.*;
 import java.util.*;
 import java.io.UnsupportedEncodingException;
+import com.example.demo.EmailConfig;
 import com.example.demo.DTOs.RecomendacionDTO;
 
 @RestController
@@ -16,6 +18,9 @@ import com.example.demo.DTOs.RecomendacionDTO;
 public class mockAPI {
 
     private static final double RADIO_TIERRA = 6371000; // radio de la tierra en metros
+    
+    @Autowired
+    private EmailConfig EmailConfig;
 
     @GetMapping("/recomendarPuntos")
     public List<RecomendacionDTO> getRecomendaciones(
@@ -45,17 +50,17 @@ public class mockAPI {
     }
 
     @PostMapping("/enviar-correo")
-    public static void sendEmail(@RequestParam("mensaje") String message, @RequestParam("correo") String correo) {
-        String host = "smtp.gmail.com"; // Servidor SMTP de Gmail
+    public String sendEmail(@RequestParam("mensaje") String message, @RequestParam("correo") String correo) {
+        String host = "smtp.gmail.com";
         String subject = "Heladeras Comunitarias";
+        
         // Obtener las credenciales del correo desde variables de entorno
-        final String user ="hheladerasdds@gmail.com";
-        final String password = "mhFWtC0X7UJ!0!oQ";
+        final String user = EmailConfig.getUser();
+        final String password = EmailConfig.getPassword();
 
         // Verificar que las credenciales no estén vacías
         if (user == null || user.isEmpty() || password == null || password.isEmpty()) {
-            System.err.println("Las credenciales no están configuradas correctamente en las variables de entorno.");
-            return;
+            return "Error: Las credenciales no están configuradas correctamente en las variables de entorno.";
         }
 
         // Configurar propiedades del servidor SMTP
@@ -64,6 +69,7 @@ public class mockAPI {
         props.put("mail.smtp.port", "587");
         props.put("mail.smtp.auth", "true");
         props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.ssl.protocols", "TLSv1.2");
 
         // Crear sesión autenticada
         Session session = Session.getInstance(props, new Authenticator() {
@@ -76,20 +82,24 @@ public class mockAPI {
         try {
             // Configurar el mensaje
             Message msg = new MimeMessage(session);
-            msg.setFrom(new InternetAddress(user, "Admin Notificaciones")); // Remitente
-            msg.addRecipient(Message.RecipientType.TO, new InternetAddress(correo)); // Destinatario
+            msg.setFrom(new InternetAddress(user, "Admin Notificaciones"));
+            msg.addRecipient(Message.RecipientType.TO, new InternetAddress(correo));
             msg.setSubject(subject);
-
-            // Establecer el contenido del mensaje
             msg.setText(message);
 
             // Enviar el correo
             Transport.send(msg);
-            System.out.println("Correo enviado con éxito a " + correo);
+            return "Correo enviado con éxito a " + correo;
 
-        } catch (MessagingException | UnsupportedEncodingException e) {
-            System.err.println("Error al enviar correo: " + e.getMessage());
-            e.printStackTrace();
+        } catch (AuthenticationFailedException e) {
+            System.err.println("Error de autenticación: " + e.getMessage());
+            return "Error de autenticación al enviar el correo. Por favor, verifica las credenciales.";
+        } catch (MessagingException e) {
+            System.err.println("Error al enviar el correo: " + e.getMessage());
+            return "Error al enviar el correo: " + e.getMessage();
+        } catch (UnsupportedEncodingException e) {
+            System.err.println("Error de codificación: " + e.getMessage());
+            return "Error de codificación al enviar el correo.";
         }
     }
 }

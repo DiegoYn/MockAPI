@@ -1,4 +1,5 @@
 com\example\demo\DTOs\RecomendacionDTO.class
+com\example\demo\EmailConfig.class
 com\example\demo\MockApiApplication.class
 com\example\demo\controllers\mockAPI.class
 com\example\demo\controllers\mockAPI$1.class
